@@ -1,0 +1,9 @@
+# Ignore files
+node_modules/
+*.log
+.env
+.DS_Store
+.vscode/
+.idea/
+dist/
+build/
