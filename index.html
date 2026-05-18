@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>N-Queen Solver | Hill Climbing AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+/* ===== RESET & BASE ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --void:#050810;
+  --deep:#080d1a;
+  --panel:#0d1428;
+  --card:#111c35;
+  --border:#1e3060;
+  --cyan:#00e5ff;
+  --cyan-dim:#0097a7;
+  --gold:#ffd600;
+  --green:#00e676;
+  --red:#ff1744;
+  --purple:#7c4dff;
+  --text:#c9d6f0;
+  --text-dim:#607090;
+  --font-display:'Orbitron',monospace;
+  --font-code:'Space Mono',monospace;
+  --font-body:'DM Sans',sans-serif;
+}
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{background:var(--void);color:var(--text);font-family:var(--font-body);min-height:100vh;overflow-x:hidden}
+::selection{background:var(--cyan);color:#000}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--deep)}
+::-webkit-scrollbar-thumb{background:var(--cyan-dim);border-radius:3px}
+
+/* ===== UTILITY ===== */
+.section{padding:80px 20px;max-width:1280px;margin:0 auto}
+.tag{display:inline-block;font-family:var(--font-code);font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--cyan);border:1px solid var(--cyan);padding:4px 14px;border-radius:2px;margin-bottom:20px}
+h2.sec-title{font-family:var(--font-display);font-size:clamp(24px,4vw,42px);font-weight:900;margin-bottom:12px;line-height:1.1}
+.sec-sub{color:var(--text-dim);font-size:17px;max-width:620px;line-height:1.7;margin-bottom:50px}
+.glow-line{height:2px;width:80px;background:linear-gradient(90deg,var(--cyan),transparent);margin-bottom:40px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px;transition:all .3s}
+.card:hover{border-color:var(--cyan);box-shadow:0 0 30px rgba(0,229,255,.1)}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 32px;font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:2px;border:none;border-radius:4px;cursor:pointer;transition:all .3s;text-decoration:none}
+.btn-primary{background:linear-gradient(135deg,var(--cyan),var(--purple));color:#fff}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,229,255,.4)}
+.btn-outline{background:transparent;border:2px solid var(--cyan);color:var(--cyan)}
+.btn-outline:hover{background:var(--cyan);color:#000}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:30px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+@media(max-width:768px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+/* ===== NAV ===== */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,8,16,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.nav-logo{font-family:var(--font-display);font-size:14px;font-weight:900;color:var(--cyan);letter-spacing:3px}
+.nav-links{display:flex;gap:30px;list-style:none}
+.nav-links a{font-size:12px;font-family:var(--font-code);color:var(--text-dim);text-decoration:none;letter-spacing:2px;transition:color .2s}
+.nav-links a:hover{color:var(--cyan)}
+@media(max-width:768px){.nav-links{display:none}}
+
+/* ===== HERO ===== */
+#hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;padding-top:80px}
+.hero-bg{position:absolute;inset:0;z-index:0}
+.chess-grid{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);width:100%;height:100%;opacity:.12}
+.chess-grid div{transition:background .5s}
+.chess-grid div:nth-child(odd){background:rgba(0,229,255,.06)}
+.chess-grid div:nth-child(even){background:rgba(124,77,255,.06)}
+.hero-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(0,229,255,.15),transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);animation:pulseGlow 4s ease-in-out infinite}
+@keyframes pulseGlow{0%,100%{opacity:.6;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}}
+.hero-content{position:relative;z-index:2}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.3);border-radius:50px;padding:8px 20px;font-family:var(--font-code);font-size:12px;color:var(--cyan);margin-bottom:30px;animation:fadeDown .8s ease both}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+.hero-title{font-family:var(--font-display);font-size:clamp(32px,6vw,72px);font-weight:900;line-height:1;margin-bottom:20px;animation:fadeUp 1s .2s ease both}
+.hero-title .line1{color:#fff}
+.hero-title .line2{color:var(--cyan);text-shadow:0 0 40px rgba(0,229,255,.5)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.hero-sub{font-size:18px;color:var(--text-dim);margin-bottom:14px;animation:fadeUp 1s .3s ease both}
+.hero-course{font-family:var(--font-code);font-size:13px;color:var(--gold);letter-spacing:2px;margin-bottom:50px;animation:fadeUp 1s .4s ease both}
+.hero-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;animation:fadeUp 1s .5s ease both}
+.floating-queens{position:absolute;inset:0;pointer-events:none;z-index:1}
+.fq{position:absolute;font-size:28px;animation:floatQ linear infinite;opacity:0}
+@keyframes floatQ{0%{opacity:0;transform:translateY(0) rotate(0deg)}10%{opacity:.3}90%{opacity:.3}100%{opacity:0;transform:translateY(-100vh) rotate(360deg)}}
+.scan-line{position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);animation:scan 3s ease-in-out infinite}
+@keyframes scan{0%,100%{opacity:0;transform:scaleX(.1)}50%{opacity:1;transform:scaleX(1)}}
+.hero-scroll{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;font-family:var(--font-code);font-size:11px;color:var(--text-dim);animation:bounce 2s infinite}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+
+/* ===== ABOUT SECTION ===== */
+#about{background:linear-gradient(180deg,var(--void),var(--deep))}
+.about-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:60px;align-items:center}
+@media(max-width:768px){.about-grid{grid-template-columns:1fr}}
+.constraint-list{display:flex;flex-direction:column;gap:12px;margin-top:24px}
+.constraint-item{display:flex;align-items:center;gap:14px;background:rgba(255,23,68,.08);border:1px solid rgba(255,23,68,.2);border-radius:8px;padding:14px 18px;transition:all .3s}
+.constraint-item:hover{background:rgba(255,23,68,.15);border-color:var(--red)}
+.constraint-item .icon{color:var(--red);font-size:18px;width:28px}
+.constraint-item .label{font-weight:600;font-size:15px;color:#fff;margin-bottom:2px}
+.constraint-item .desc{font-size:13px;color:var(--text-dim)}
+
+/* ===== MINI BOARD (About) ===== */
+.mini-board{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;background:var(--border);border-radius:8px;overflow:hidden;border:2px solid var(--border);max-width:380px}
+.mini-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;transition:all .3s;position:relative}
+.mini-cell.light{background:#1a2a4a}
+.mini-cell.dark{background:#0d1828}
+.mini-cell.queen-here{background:rgba(0,229,255,.15)!important}
+.mini-cell.attacked{background:rgba(255,23,68,.3)!important}
+.mini-cell.safe{background:rgba(0,230,118,.15)!important}
+.mini-cell .q-icon{font-size:20px;transition:all .3s}
+.board-legend{display:flex;gap:20px;margin-top:14px;font-size:13px;font-family:var(--font-code)}
+.legend-item{display:flex;align-items:center;gap:8px}
+.legend-dot{width:14px;height:14px;border-radius:3px}
+
+/* ===== WHY AI SECTION ===== */
+#why-ai{background:var(--deep)}
+.ai-flow{display:flex;align-items:center;gap:0;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.flow-node{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;text-align:center;min-width:140px;flex:1;transition:all .3s;animation:fadeUp .6s ease both}
+.flow-node:hover{border-color:var(--cyan);transform:translateY(-4px)}
+.flow-node .fn-icon{font-size:28px;margin-bottom:10px;color:var(--cyan)}
+.flow-node .fn-title{font-family:var(--font-display);font-size:13px;font-weight:700;color:#fff;margin-bottom:6px}
+.flow-node .fn-desc{font-size:12px;color:var(--text-dim)}
+.flow-arrow{color:var(--cyan-dim);font-size:20px;padding:0 10px}
+
+/* ===== HILL CLIMBING EXPLANATION ===== */
+#hill-climbing{background:linear-gradient(180deg,var(--deep),var(--void))}
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-top:40px}
+.step-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:26px;position:relative;overflow:hidden;transition:all .3s}
+.step-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--cyan),var(--purple))}
+.step-card:hover{border-color:var(--cyan);transform:translateY(-4px)}
+.step-num{font-family:var(--font-display);font-size:36px;font-weight:900;color:rgba(0,229,255,.15);position:absolute;top:10px;right:16px}
+.step-icon{font-size:28px;margin-bottom:14px;color:var(--cyan)}
+.step-title{font-family:var(--font-display);font-size:15px;font-weight:700;color:#fff;margin-bottom:8px}
+.step-desc{font-size:14px;color:var(--text-dim);line-height:1.6}
+.algo-flowchart{margin-top:50px;display:flex;flex-direction:column;align-items:center;gap:0}
+.fc-box{background:var(--card);border:2px solid var(--border);border-radius:8px;padding:14px 28px;font-family:var(--font-code);font-size:14px;color:#fff;text-align:center;transition:all .3s;min-width:260px}
+.fc-box.start-end{border-radius:50px;background:linear-gradient(135deg,rgba(0,229,255,.2),rgba(124,77,255,.2));border-color:var(--cyan)}
+.fc-box.decision{transform:rotate(0deg);background:rgba(255,214,0,.1);border-color:var(--gold);color:var(--gold)}
+.fc-box.process:hover{border-color:var(--cyan)}
+.fc-arrow{display:flex;flex-direction:column;align-items:center;color:var(--text-dim);font-size:12px;font-family:var(--font-code);padding:4px 0}
+.fc-arrow::before{content:'';width:2px;height:20px;background:var(--border);display:block;margin-bottom:4px}
+
+/* ===== SOLVER SECTION ===== */
+#solver{background:var(--void)}
+.solver-wrapper{display:grid;grid-template-columns:1fr 340px;gap:30px;align-items:start}
+@media(max-width:900px){.solver-wrapper{grid-template-columns:1fr}}
+.solver-controls{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:24px}
+.ctrl-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.ctrl-label{font-family:var(--font-code);font-size:12px;color:var(--text-dim);letter-spacing:2px}
+.n-selector{display:flex;gap:8px}
+.n-btn{width:50px;height:44px;border:2px solid var(--border);background:var(--card);color:var(--text-dim);font-family:var(--font-display);font-size:15px;font-weight:700;border-radius:8px;cursor:pointer;transition:all .3s}
+.n-btn.active,.n-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,.1)}
+.speed-wrap{display:flex;align-items:center;gap:12px}
+.speed-slider{-webkit-appearance:none;width:130px;height:4px;background:var(--border);border-radius:2px;outline:none}
+.speed-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--cyan);cursor:pointer}
+.toggle-wrap{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-dim)}
+.toggle{position:relative;width:46px;height:24px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:12px;transition:.3s}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s}
+input:checked+.toggle-slider{background:var(--cyan)}
+input:checked+.toggle-slider::before{transform:translateX(22px)}
+.ctrl-btns{display:flex;gap:10px;flex-wrap:wrap}
+.ctrl-btns .btn{padding:12px 22px;font-size:12px}
+
+/* ===== CHESSBOARD ===== */
+.board-container{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px;display:flex;justify-content:center}
+#chess-board{display:grid;gap:3px;background:var(--border);border-radius:8px;overflow:hidden;border:2px solid var(--border)}
+.cell{display:flex;align-items:center;justify-content:center;transition:all .4s;position:relative;min-width:40px;min-height:40px}
+.cell.light{background:#1a2a4a}
+.cell.dark{background:#0d1828}
+.cell.queen{background:rgba(0,229,255,.18)!important}
+.cell.attacking{background:rgba(255,23,68,.35)!important;animation:redFlash .6s ease}
+@keyframes redFlash{0%,100%{background:rgba(255,23,68,.35)!important}50%{background:rgba(255,23,68,.6)!important}}
+.cell.best-move{background:rgba(0,230,118,.25)!important;animation:greenPulse .6s ease}
+@keyframes greenPulse{0%,100%{background:rgba(0,230,118,.25)!important}50%{background:rgba(0,230,118,.5)!important}}
+.cell.current-queen{background:rgba(0,229,255,.3)!important}
+.queen-piece{font-size:28px;line-height:1;transition:all .4s;display:block;filter:drop-shadow(0 0 6px rgba(0,229,255,.6));animation:queenAppear .3s ease}
+@keyframes queenAppear{from{transform:scale(0) rotate(180deg);opacity:0}to{transform:scale(1) rotate(0deg);opacity:1}}
+.cell.attacking .queen-piece{filter:drop-shadow(0 0 8px rgba(255,23,68,.8))}
+.cell.best-move .queen-piece{filter:drop-shadow(0 0 8px rgba(0,230,118,.8))}
+.board-labels{display:flex;justify-content:space-around;padding:4px 22px;font-family:var(--font-code);font-size:11px;color:var(--text-dim)}
+
+/* ===== SIDE PANEL ===== */
+.side-panel{display:flex;flex-direction:column;gap:16px}
+.info-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px}
+.info-card-title{font-family:var(--font-code);font-size:11px;letter-spacing:3px;color:var(--text-dim);margin-bottom:16px;text-transform:uppercase}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(30,48,96,.5)}
+.stat-row:last-child{border:none}
+.stat-label{font-size:13px;color:var(--text-dim)}
+.stat-val{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--cyan)}
+.status-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:50px;font-family:var(--font-code);font-size:12px;letter-spacing:1px;font-weight:700;transition:all .4s}
+.status-badge.searching{background:rgba(0,229,255,.1);border:1px solid var(--cyan);color:var(--cyan)}
+.status-badge.searching .dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);animation:blink .8s infinite}
+.status-badge.solved{background:rgba(0,230,118,.1);border:1px solid var(--green);color:var(--green)}
+.status-badge.stuck{background:rgba(255,23,68,.1);border:1px solid var(--red);color:var(--red)}
+.status-badge.idle{background:rgba(100,120,160,.1);border:1px solid var(--text-dim);color:var(--text-dim)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.heuristic-display{text-align:center;padding:20px 0}
+.h-num{font-family:var(--font-display);font-size:52px;font-weight:900;color:var(--cyan);line-height:1;transition:all .4s}
+.h-num.bad{color:var(--red)}
+.h-num.good{color:var(--green)}
+.h-label{font-family:var(--font-code);font-size:11px;color:var(--text-dim);letter-spacing:2px;margin-top:6px}
+.h-formula{font-family:var(--font-code);font-size:12px;color:var(--text-dim);margin-top:8px;background:rgba(0,0,0,.3);padding:8px;border-radius:6px;border-left:2px solid var(--cyan)}
+.step-log{max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.log-entry{font-size:12px;font-family:var(--font-code);padding:8px 12px;border-radius:6px;background:rgba(0,0,0,.3);border-left:2px solid var(--border);animation:slideIn .3s ease;color:var(--text)}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+.log-entry.info{border-left-color:var(--cyan);color:var(--cyan)}
+.log-entry.success{border-left-color:var(--green);color:var(--green)}
+.log-entry.warning{border-left-color:var(--gold);color:var(--gold)}
+.log-entry.error{border-left-color:var(--red);color:var(--red)}
+.progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin:10px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--purple));border-radius:3px;transition:width .4s;width:0%}
+
+/* ===== PSEUDOCODE ===== */
+#pseudocode{background:var(--deep)}
+.code-card{background:#060d1e;border:1px solid var(--border);border-radius:16px;overflow:hidden;max-width:760px;margin:0 auto}
+.code-header{display:flex;align-items:center;gap:10px;padding:14px 20px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--border)}
+.code-dot{width:12px;height:12px;border-radius:50%}
+.code-dot:nth-child(1){background:#ff5f56}
+.code-dot:nth-child(2){background:#ffbd2e}
+.code-dot:nth-child(3){background:#27c93f}
+.code-title{font-family:var(--font-code);font-size:13px;color:var(--text-dim);margin-left:8px}
+.code-body{padding:28px;font-family:var(--font-code);font-size:14px;line-height:2}
+.code-line{display:block;padding:2px 0}
+.code-line .kw{color:#ff79c6}
+.code-line .fn{color:var(--cyan)}
+.code-line .str{color:var(--gold)}
+.code-line .cm{color:#6272a4;font-style:italic}
+.code-line .num{color:var(--purple)}
+.code-line .var{color:var(--green)}
+.indent-1{padding-left:24px}
+.indent-2{padding-left:48px}
+.indent-3{padding-left:72px}
+.code-cursor{display:inline-block;width:2px;height:16px;background:var(--cyan);animation:blink .8s infinite;vertical-align:middle}
+
+/* ===== PROS/CONS ===== */
+#pros-cons{background:var(--void)}
+.pros-cons-grid{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:40px}
+@media(max-width:600px){.pros-cons-grid{grid-template-columns:1fr}}
+.pc-card{border-radius:16px;padding:30px;border:1px solid}
+.pc-card.pros{background:rgba(0,230,118,.05);border-color:rgba(0,230,118,.2)}
+.pc-card.cons{background:rgba(255,23,68,.05);border-color:rgba(255,23,68,.2)}
+.pc-title{font-family:var(--font-display);font-size:20px;font-weight:900;margin-bottom:20px;display:flex;align-items:center;gap:12px}
+.pc-card.pros .pc-title{color:var(--green)}
+.pc-card.cons .pc-title{color:var(--red)}
+.pc-items{display:flex;flex-direction:column;gap:12px}
+.pc-item{display:flex;align-items:flex-start;gap:12px;font-size:14px;line-height:1.6}
+.pc-item .bullet{margin-top:3px;font-size:12px;flex-shrink:0}
+.pc-card.pros .pc-item .bullet{color:var(--green)}
+.pc-card.cons .pc-item .bullet{color:var(--red)}
+
+/* ===== LOCAL MAXIMA ===== */
+#local-maxima{background:var(--deep)}
+.lm-demo{background:var(--card);border:1px solid rgba(255,23,68,.3);border-radius:16px;padding:30px;text-align:center;position:relative;overflow:hidden}
+.lm-demo::before{content:'LOCAL MAXIMUM TRAP';position:absolute;top:14px;right:14px;font-family:var(--font-code);font-size:10px;color:rgba(255,23,68,.5);letter-spacing:2px}
+.lm-board{display:grid;gap:3px;background:var(--border);border-radius:8px;overflow:hidden;border:2px solid rgba(255,23,68,.3);display:inline-grid;margin-bottom:20px}
+.lm-cell{width:54px;height:54px;display:flex;align-items:center;justify-content:center;font-size:26px}
+.lm-cell.light{background:#1a2a4a}
+.lm-cell.dark{background:#0d1828}
+.lm-cell.stuck-queen{background:rgba(255,23,68,.3)!important;animation:stuckPulse 1.5s infinite}
+@keyframes stuckPulse{0%,100%{background:rgba(255,23,68,.3)!important}50%{background:rgba(255,23,68,.6)!important}}
+.lm-msg{font-family:var(--font-code);font-size:13px;color:var(--red);margin-bottom:20px}
+.lm-explanation{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:24px}
+@media(max-width:600px){.lm-explanation{grid-template-columns:1fr}}
+.lm-exp-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:left}
+.lm-exp-icon{font-size:24px;margin-bottom:10px}
+.lm-exp-title{font-weight:700;font-size:14px;color:#fff;margin-bottom:6px}
+.lm-exp-desc{font-size:13px;color:var(--text-dim);line-height:1.5}
+
+/* ===== COMPLEXITY ===== */
+#complexity{background:var(--void)}
+.complexity-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:40px}
+@media(max-width:600px){.complexity-grid{grid-template-columns:1fr}}
+.cx-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px;text-align:center;transition:all .3s}
+.cx-card:hover{border-color:var(--cyan)}
+.cx-type{font-family:var(--font-code);font-size:11px;letter-spacing:3px;color:var(--text-dim);margin-bottom:14px}
+.cx-formula{font-family:var(--font-display);font-size:38px;font-weight:900;color:var(--cyan);margin-bottom:14px}
+.cx-desc{font-size:14px;color:var(--text-dim);line-height:1.6}
+
+/* ===== RESULT SECTION ===== */
+#result{background:var(--deep);text-align:center;display:none}
+.result-inner{padding:80px 20px;max-width:700px;margin:0 auto}
+.result-icon{font-size:80px;animation:bounceIn .6s ease}
+@keyframes bounceIn{0%{transform:scale(0)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
+.result-title{font-family:var(--font-display);font-size:clamp(24px,4vw,48px);font-weight:900;color:var(--green);margin:20px 0 10px}
+.result-sub{color:var(--text-dim);font-size:18px;margin-bottom:30px}
+.result-stats{display:flex;justify-content:center;gap:30px;flex-wrap:wrap;margin:30px 0}
+.rs-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px 28px;min-width:130px}
+.rs-num{font-family:var(--font-display);font-size:32px;font-weight:900;color:var(--cyan)}
+.rs-label{font-size:13px;color:var(--text-dim);margin-top:4px}
+.confetti-wrap{position:fixed;inset:0;pointer-events:none;z-index:9999;display:none}
+
+/* ===== FOOTER ===== */
+footer{background:var(--void);border-top:1px solid var(--border);padding:40px 20px;text-align:center}
+.footer-text{font-family:var(--font-code);font-size:12px;color:var(--text-dim);line-height:2}
+.footer-text span{color:var(--cyan)}
+
+/* ===== ANIMATIONS ===== */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.solving-overlay{position:fixed;inset:0;background:rgba(5,8,16,.9);z-index:500;display:flex;align-items:center;justify-content:center;display:none}
+.solving-text{font-family:var(--font-display);font-size:24px;color:var(--cyan);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">♛ N-QUEEN AI</div>
+  <ul class="nav-links">
+    <li><a href="#about">Problem</a></li>
+    <li><a href="#hill-climbing">Algorithm</a></li>
+    <li><a href="#solver">Solver</a></li>
+    <li><a href="#pseudocode">Code</a></li>
+    <li><a href="#complexity">Complexity</a></li>
+  </ul>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section id="hero">
+  <div class="hero-bg">
+    <div class="chess-grid" id="heroBg"></div>
+    <div class="hero-glow"></div>
+  </div>
+  <div class="floating-queens" id="floatingQueens"></div>
+  <div class="scan-line"></div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <i class="fas fa-brain"></i>
+      AIML Mini Project — Hill Climbing Search
+    </div>
+    <h1 class="hero-title">
+      <div class="line1">N-Queen Problem</div>
+      <div class="line2">Solver ♛</div>
+    </h1>
+    <p class="hero-sub">An AI Visualization Simulator using Hill Climbing Algorithm</p>
+    <p class="hero-course">Artificial Intelligence &amp; Machine Learning</p>
+    <div class="hero-btns">
+      <a href="#solver" class="btn btn-primary"><i class="fas fa-play"></i> Start Visualization</a>
+      <a href="#about" class="btn btn-outline"><i class="fas fa-book-open"></i> Learn More</a>
+    </div>
+  </div>
+  <div class="hero-scroll">
+    <span>SCROLL</span><i class="fas fa-chevron-down"></i>
+  </div>
+</section>
+
+<!-- ===== ABOUT ===== -->
+<section id="about">
+<div class="section">
+  <div class="tag">PROBLEM STATEMENT</div>
+  <h2 class="sec-title">The N-Queen Problem</h2>
+  <div class="glow-line"></div>
+  <div class="about-grid reveal">
+    <div>
+      <p class="sec-sub">Place <strong>N queens</strong> on an N×N chessboard such that no two queens threaten each other. A queen attacks in all 8 directions — horizontally, vertically, and diagonally.</p>
+      <div class="constraint-list">
+        <div class="constraint-item reveal">
+          <div class="icon"><i class="fas fa-arrows-left-right"></i></div>
+          <div>
+            <div class="label">Same Row Conflict</div>
+            <div class="desc">Two queens in the same row attack each other horizontally.</div>
+          </div>
+        </div>
+        <div class="constraint-item reveal">
+          <div class="icon"><i class="fas fa-arrows-up-down"></i></div>
+          <div>
+            <div class="label">Same Column Conflict</div>
+            <div class="desc">Two queens in the same column attack each other vertically.</div>
+          </div>
+        </div>
+        <div class="constraint-item reveal">
+          <div class="icon"><i class="fas fa-arrows-to-circle"></i></div>
+          <div>
+            <div class="label">Diagonal Conflict</div>
+            <div class="desc">Two queens on the same diagonal can attack each other.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="reveal">
+      <div class="mini-board" id="miniBoard"></div>
+      <div class="board-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(0,229,255,.4)"></div> Queen</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(255,23,68,.4)"></div> Attacked</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(0,230,118,.25)"></div> Safe</div>
+      </div>
+      <p style="margin-top:12px;font-size:13px;color:var(--text-dim);font-family:var(--font-code)">↗ Hover over a queen to see attack patterns</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===== WHY AI ===== -->
+<section id="why-ai">
+<div class="section">
+  <div class="tag">AI PERSPECTIVE</div>
+  <h2 class="sec-title">Why AI Solves This</h2>
+  <div class="glow-line"></div>
+  <p class="sec-sub">The N-Queen problem is a classic AI benchmark. Brute force fails at scale — AI heuristic search cuts through the exponential state space intelligently.</p>
+  <div class="grid-3 reveal" style="margin-bottom:30px">
+    <div class="card">
+      <div style="font-size:32px;color:var(--cyan);margin-bottom:14px">⚡</div>
+      <div style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;margin-bottom:8px">State Space Search</div>
+      <div style="font-size:13px;color:var(--text-dim);line-height:1.7">For N=8, there are 8^8 = 16.7 million possible board states. AI navigates this efficiently using heuristics.</div>
+    </div>
+    <div class="card">
+      <div style="font-size:32px;color:var(--purple);margin-bottom:14px">🎯</div>
+      <div style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;margin-bottom:8px">Optimization Problem</div>
+      <div style="font-size:13px;color:var(--text-dim);line-height:1.7">We minimize the heuristic h(n) = number of attacking queen pairs. Goal is h(n) = 0.</div>
+    </div>
+    <div class="card">
+      <div style="font-size:32px;color:var(--gold);margin-bottom:14px">🔗</div>
+      <div style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;margin-bottom:8px">Constraint Satisfaction</div>
+      <div style="font-size:13px;color:var(--text-dim);line-height:1.7">Each constraint (row, column, diagonal) narrows the solution space. AI uses these to prune bad states.</div>
+    </div>
+  </div>
+  <div class="ai-flow reveal">
+    <div class="flow-node">
+      <div class="fn-icon">🎲</div>
+      <div class="fn-title">Initial State</div>
+      <div class="fn-desc">Random queen placement</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="fn-icon">📊</div>
+      <div class="fn-title">Heuristic</div>
+      <div class="fn-desc">Count attacking pairs</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="fn-icon">🔍</div>
+      <div class="fn-title">Neighbors</div>
+      <div class="fn-desc">Generate all moves</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="fn-icon">⬆️</div>
+      <div class="fn-title">Best Move</div>
+      <div class="fn-desc">Select lowest h(n)</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="fn-icon">✅</div>
+      <div class="fn-title">Goal / Local Max</div>
+      <div class="fn-desc">h=0 or restart</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===== HILL CLIMBING ===== -->
+<section id="hill-climbing">
+<div class="section">
+  <div class="tag">THE ALGORITHM</div>
+  <h2 class="sec-title">Hill Climbing Algorithm</h2>
+  <div class="glow-line"></div>
+  <p class="sec-sub">Hill Climbing is a local search algorithm that continuously moves toward better states by evaluating neighbors. Think of it as always climbing uphill (or in our case, always reducing conflicts).</p>
+  <div class="steps-grid">
+    <div class="step-card reveal">
+      <span class="step-num">1</span>
+      <div class="step-icon">🎲</div>
+      <div class="step-title">Random Initial State</div>
+      <div class="step-desc">Place one queen per column at a random row. This is our starting board configuration.</div>
+    </div>
+    <div class="step-card reveal">
+      <span class="step-num">2</span>
+      <div class="step-icon">📐</div>
+      <div class="step-title">Heuristic h(n)</div>
+      <div class="step-desc">Count all pairs of queens attacking each other. <strong>h(n) = 0</strong> means solution found.</div>
+    </div>
+    <div class="step-card reveal">
+      <span class="step-num">3</span>
+      <div class="step-icon">🔢</div>
+      <div class="step-title">Generate Neighbors</div>
+      <div class="step-desc">For each column, try moving that queen to every other row. N×(N-1) neighbors generated.</div>
+    </div>
+    <div class="step-card reveal">
+      <span class="step-num">4</span>
+      <div class="step-icon">🏆</div>
+      <div class="step-title">Select Best Neighbor</div>
+      <div class="step-desc">Pick the neighbor with the minimum heuristic value — the move with fewest conflicts.</div>
+    </div>
+    <div class="step-card reveal">
+      <span class="step-num">5</span>
+      <div class="step-icon">🚀</div>
+      <div class="step-title">Move to New State</div>
+      <div class="step-desc">If best neighbor improves h(n), move there. Update the board and recalculate.</div>
+    </div>
+    <div class="step-card reveal">
+      <span class="step-num">6</span>
+      <div class="step-icon">🔄</div>
+      <div class="step-title">Repeat / Stop</div>
+      <div class="step-desc">Repeat until h(n)=0 (solution) or no neighbor improves state (local maximum).</div>
+    </div>
+  </div>
+  <div class="algo-flowchart reveal" style="margin-top:50px">
+    <div class="fc-box start-end">START: Place N queens randomly</div>
+    <div class="fc-arrow">h(n) = count attacking pairs</div>
+    <div class="fc-box process">Calculate Heuristic h(n)</div>
+    <div class="fc-arrow">Is h(n) == 0?</div>
+    <div class="fc-box decision">h(n) = 0?</div>
+    <div class="fc-arrow">No → Generate neighbors &amp; pick best</div>
+    <div class="fc-box process">Find best neighbor (min h)</div>
+    <div class="fc-arrow">Best neighbor better than current?</div>
+    <div class="fc-box decision">Improved?</div>
+    <div class="fc-arrow">No → Local Maximum reached</div>
+    <div class="fc-box start-end">STOP: Solution ✓ OR Local Max ⚠</div>
+  </div>
+</div>
+</section>
+
+<!-- ===== SOLVER ===== -->
+<section id="solver">
+<div class="section">
+  <div class="tag">INTERACTIVE SOLVER</div>
+  <h2 class="sec-title">Live AI Visualization</h2>
+  <div class="glow-line"></div>
+  <p class="sec-sub">Watch the Hill Climbing algorithm solve the N-Queen problem in real time. Adjust N, control speed, and toggle random restart.</p>
+
+  <div class="solver-controls">
+    <div class="ctrl-row">
+      <span class="ctrl-label">SELECT N:</span>
+      <div class="n-selector">
+        <button class="n-btn" data-n="4">4</button>
+        <button class="n-btn active" data-n="6">6</button>
+        <button class="n-btn" data-n="8">8</button>
+        <button class="n-btn" data-n="10">10</button>
+        <button class="n-btn" data-n="12">12</button>
+      </div>
+    </div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">SPEED:</span>
+      <div class="speed-wrap">
+        <i class="fas fa-gauge-simple" style="color:var(--text-dim)"></i>
+        <input type="range" class="speed-slider" id="speedSlider" min="1" max="10" value="5">
+        <span id="speedLabel" style="font-family:var(--font-code);font-size:12px;color:var(--cyan)">5x</span>
+      </div>
+      <span class="ctrl-label" style="margin-left:20px">RANDOM RESTART:</span>
+      <label class="toggle">
+        <input type="checkbox" id="restartToggle">
+        <span class="toggle-slider"></span>
+      </label>
+      <span style="font-size:13px;color:var(--text-dim)" id="restartLabel">OFF</span>
+    </div>
+    <div class="ctrl-btns">
+      <button class="btn btn-primary" id="btnStart"><i class="fas fa-play"></i> START</button>
+      <button class="btn btn-outline" id="btnPause" disabled><i class="fas fa-pause"></i> PAUSE</button>
+      <button class="btn btn-outline" id="btnStep" disabled><i class="fas fa-forward-step"></i> STEP</button>
+      <button class="btn btn-outline" id="btnReset"><i class="fas fa-rotate-left"></i> RESET</button>
+    </div>
+  </div>
+
+  <div class="solver-wrapper">
+    <div>
+      <div class="board-container">
+        <div>
+          <div id="chess-board"></div>
+          <div class="board-labels" id="boardLabels"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side-panel">
+      <div class="info-card">
+        <div class="info-card-title">STATUS</div>
+        <div id="statusBadge" class="status-badge idle"><span class="dot" style="display:none"></span><span id="statusText">IDLE</span></div>
+        <div class="heuristic-display">
+          <div class="h-num" id="heuristicNum">—</div>
+          <div class="h-label">ATTACKING PAIRS h(n)</div>
+          <div class="h-formula">h(n) = Σ conflicting queen pairs</div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-title">STATISTICS</div>
+        <div class="stat-row"><span class="stat-label">Current Step</span><span class="stat-val" id="statStep">0</span></div>
+        <div class="stat-row"><span class="stat-label">Total Iterations</span><span class="stat-val" id="statIter">0</span></div>
+        <div class="stat-row"><span class="stat-label">Restarts</span><span class="stat-val" id="statRestart">0</span></div>
+        <div class="stat-row"><span class="stat-label">Best h(n) Found</span><span class="stat-val" id="statBest">—</span></div>
+        <div class="stat-row"><span class="stat-label">N Value</span><span class="stat-val" id="statN">6</span></div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-title">ALGORITHM LOG</div>
+        <div class="step-log" id="stepLog"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===== PSEUDOCODE ===== -->
+<section id="pseudocode">
+<div class="section">
+  <div class="tag">PSEUDOCODE</div>
+  <h2 class="sec-title">Algorithm Code</h2>
+  <div class="glow-line"></div>
+  <p class="sec-sub">The formal pseudocode representation of the Hill Climbing algorithm applied to the N-Queen problem.</p>
+  <div class="code-card reveal">
+    <div class="code-header">
+      <div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div>
+      <div class="code-title">hill_climbing_nqueen.py</div>
+    </div>
+    <div class="code-body">
+<span class="code-line"><span class="cm">// Hill Climbing — N-Queen Solver</span></span>
+<span class="code-line">&nbsp;</span>
+<span class="code-line"><span class="kw">function</span> <span class="fn">hillClimbing</span>(n):</span>
+<span class="code-line indent-1"><span class="var">board</span> ← <span class="fn">randomState</span>(n)   <span class="cm">// one queen per column</span></span>
+<span class="code-line indent-1"><span class="var">current_h</span> ← <span class="fn">heuristic</span>(<span class="var">board</span>)  <span class="cm">// count attacking pairs</span></span>
+<span class="code-line">&nbsp;</span>
+<span class="code-line indent-1"><span class="kw">while</span> <span class="kw">True</span>:</span>
+<span class="code-line indent-2"><span class="kw">if</span> <span class="var">current_h</span> == <span class="num">0</span>:</span>
+<span class="code-line indent-3"><span class="kw">return</span> <span class="var">board</span>  <span class="cm">// ✓ Solution found!</span></span>
+<span class="code-line">&nbsp;</span>
+<span class="code-line indent-2"><span class="var">neighbors</span> ← <span class="fn">generateNeighbors</span>(<span class="var">board</span>, n)</span>
+<span class="code-line indent-2"><span class="var">best</span> ← <span class="fn">minBy</span>(<span class="var">neighbors</span>, <span class="fn">heuristic</span>)</span>
+<span class="code-line indent-2"><span class="var">best_h</span> ← <span class="fn">heuristic</span>(<span class="var">best</span>)</span>
+<span class="code-line">&nbsp;</span>
+<span class="code-line indent-2"><span class="kw">if</span> <span class="var">best_h</span> &gt;= <span class="var">current_h</span>:</span>
+<span class="code-line indent-3"><span class="kw">return</span> <span class="str">LOCAL_MAXIMUM</span>  <span class="cm">// ⚠ Stuck!</span></span>
+<span class="code-line">&nbsp;</span>
+<span class="code-line indent-2"><span class="var">board</span> ← <span class="var">best</span>          <span class="cm">// Move to better state</span></span>
+<span class="code-line indent-2"><span class="var">current_h</span> ← <span class="var">best_h</span></span>
+<span class="code-line">&nbsp;</span>
+<span class="code-line"><span class="kw">function</span> <span class="fn">heuristic</span>(<span class="var">board</span>):</span>
+<span class="code-line indent-1"><span class="var">attacks</span> ← <span class="num">0</span></span>
+<span class="code-line indent-1"><span class="kw">for each</span> pair (i, j) <span class="kw">where</span> i &lt; j:</span>
+<span class="code-line indent-2"><span class="kw">if</span> <span class="fn">sameRow</span>(i,j) <span class="kw">or</span> <span class="fn">sameDiag</span>(i,j):</span>
+<span class="code-line indent-3"><span class="var">attacks</span> += <span class="num">1</span></span>
+<span class="code-line indent-1"><span class="kw">return</span> <span class="var">attacks</span></span>
+<span class="code-cursor"></span>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===== PROS/CONS ===== -->
+<section id="pros-cons">
+<div class="section">
+  <div class="tag">ANALYSIS</div>
+  <h2 class="sec-title">Advantages &amp; Limitations</h2>
+  <div class="glow-line"></div>
+  <div class="pros-cons-grid">
+    <div class="pc-card pros reveal">
+      <div class="pc-title"><i class="fas fa-check-circle"></i> Advantages</div>
+      <div class="pc-items">
+        <div class="pc-item"><span class="bullet">▶</span><div><strong>Memory Efficient — O(N)</strong><br><span style="color:var(--text-dim);font-size:13px">Only stores current state, not entire search tree.</span></div></div>
+        <div class="pc-item"><span class="bullet">▶</span><div><strong>Fast Convergence</strong><br><span style="color:var(--text-dim);font-size:13px">Quickly moves toward better states without exhaustive search.</span></div></div>
+        <div class="pc-item"><span class="bullet">▶</span><div><strong>Simplicity</strong><br><span style="color:var(--text-dim);font-size:13px">Easy to implement and understand. No complex data structures needed.</span></div></div>
+        <div class="pc-item"><span class="bullet">▶</span><div><strong>Scalable</strong><br><span style="color:var(--text-dim);font-size:13px">Works for large N where brute-force is infeasible.</span></div></div>
+      </div>
+    </div>
+    <div class="pc-card cons reveal">
+      <div class="pc-title"><i class="fas fa-triangle-exclamation"></i> Limitations</div>
+      <div class="pc-items">
+        <div class="pc-item"><span class="bullet">▶</span><div><strong>Local Maximum Problem</strong><br><span style="color:var(--text-dim);font-size:13px">Can get stuck where no neighbor is better, but solution not found.</span></div></div>
+        <div class="pc-item"><span class="bullet">▶</span><div><strong>No Backtracking</strong><br><span style="color:var(--text-dim);font-size:13px">Cannot recover from a bad decision — only moves forward.</span></div></div>
+        <div class="pc-item"><span class="bullet">▶</span><div><strong>Not Complete</strong><br><span style="color:var(--text-dim);font-size:13px">Does not guarantee finding a solution even if one exists.</span></div></div>
+        <div class="pc-item"><span class="bullet">▶</span><div><strong>Initial State Dependent</strong><br><span style="color:var(--text-dim);font-size:13px">Quality of solution depends heavily on starting configuration.</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===== LOCAL MAXIMA ===== -->
+<section id="local-maxima">
+<div class="section">
+  <div class="tag">LOCAL MAXIMUM PROBLEM</div>
+  <h2 class="sec-title">When Hill Climbing Fails</h2>
+  <div class="glow-line"></div>
+  <p class="sec-sub">A local maximum occurs when every neighboring state has a higher (worse) heuristic than the current state — the algorithm gets trapped and cannot escape without restarting.</p>
+  <div class="lm-demo reveal">
+    <div id="lmBoard" class="lm-board" style="grid-template-columns:repeat(4,54px)"></div>
+    <div class="lm-msg" id="lmMsg">⚠ All moves increase conflicts — LOCAL MAXIMUM REACHED</div>
+    <button class="btn btn-outline" onclick="runLmDemo()" style="font-size:12px"><i class="fas fa-rotate-left"></i> Show Demo Again</button>
+    <div class="lm-explanation">
+      <div class="lm-exp-card">
+        <div class="lm-exp-icon">⛰️</div>
+        <div class="lm-exp-title">What is a Local Max?</div>
+        <div class="lm-exp-desc">A state where h(n) cannot be reduced by any single queen move, but h(n) ≠ 0.</div>
+      </div>
+      <div class="lm-exp-card">
+        <div class="lm-exp-icon">🎯</div>
+        <div class="lm-exp-title">Plateau Problem</div>
+        <div class="lm-exp-desc">A flat region where all neighbors have equal h(n). Algorithm wanders without progress.</div>
+      </div>
+      <div class="lm-exp-card">
+        <div class="lm-exp-icon">🔄</div>
+        <div class="lm-exp-title">Solution: Restart</div>
+        <div class="lm-exp-desc">Random Restart Hill Climbing retries with a new random state, improving success rate significantly.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===== COMPLEXITY ===== -->
+<section id="complexity">
+<div class="section">
+  <div class="tag">COMPLEXITY ANALYSIS</div>
+  <h2 class="sec-title">Time &amp; Space Complexity</h2>
+  <div class="glow-line"></div>
+  <div class="complexity-grid">
+    <div class="cx-card reveal">
+      <div class="cx-type">TIME COMPLEXITY</div>
+      <div class="cx-formula">O(N²)</div>
+      <div class="cx-desc">Per iteration, we evaluate N×(N-1) neighbors, each requiring O(N) heuristic computation. Overall: O(N²) per step with typically O(N) steps needed.</div>
+    </div>
+    <div class="cx-card reveal">
+      <div class="cx-type">SPACE COMPLEXITY</div>
+      <div class="cx-formula">O(N)</div>
+      <div class="cx-desc">Only the current board state (array of N positions) needs to be stored. No search tree maintained — this is the key advantage over BFS/DFS.</div>
+    </div>
+    <div class="cx-card reveal">
+      <div class="cx-type">NEIGHBOR STATES</div>
+      <div class="cx-formula">N(N-1)</div>
+      <div class="cx-desc">For each of N columns, we can move the queen to N-1 other rows, generating N×(N-1) unique neighbor states per iteration.</div>
+    </div>
+    <div class="cx-card reveal">
+      <div class="cx-type">SUCCESS RATE (N=8)</div>
+      <div class="cx-formula">~86%</div>
+      <div class="cx-desc">Hill Climbing solves 8-Queen ~86% of the time. With Random Restart enabled, success rate approaches 100% within a few restarts.</div>
+    </div>
+  </div>
+  <div class="card reveal" style="margin-top:30px;display:grid;grid-template-columns:1fr 1fr;gap:24px">
+    <div>
+      <div style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--cyan);margin-bottom:14px">vs Brute Force</div>
+      <div style="font-size:14px;color:var(--text-dim);line-height:1.8">
+        Brute Force: <strong style="color:var(--red)">O(N!)</strong> — For N=12, that's 479 million states.<br>
+        Hill Climbing: <strong style="color:var(--green)">O(N²)</strong> per step — Far more tractable.
+      </div>
+    </div>
+    <div>
+      <div style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--purple);margin-bottom:14px">Random Restart</div>
+      <div style="font-size:14px;color:var(--text-dim);line-height:1.8">
+        Expected restarts for N=8: <strong style="color:var(--cyan)">~1.2</strong><br>
+        Each restart is O(N²) — very fast in practice.
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===== RESULT ===== -->
+<section id="result">
+<div class="result-inner">
+  <div class="result-icon">🎉</div>
+  <h2 class="result-title">Solution Found!</h2>
+  <p class="result-sub">All queens successfully placed with zero conflicts.</p>
+  <div class="result-stats">
+    <div class="rs-item"><div class="rs-num" id="rSteps">0</div><div class="rs-label">Steps</div></div>
+    <div class="rs-item"><div class="rs-num" id="rRestarts">0</div><div class="rs-label">Restarts</div></div>
+    <div class="rs-item"><div class="rs-num" id="rN">0</div><div class="rs-label">N Value</div></div>
+  </div>
+  <button class="btn btn-primary" onclick="document.getElementById('result').style.display='none';document.getElementById('btnReset').click()">
+    <i class="fas fa-rotate-left"></i> Try Again
+  </button>
+</div>
+</section>
+
+<!-- CONFETTI -->
+<div class="confetti-wrap" id="confettiWrap"></div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-text">
+    <p><span>N-Queen Problem Solver</span> using <span>Hill Climbing Algorithm</span></p>
+    <p>Artificial Intelligence &amp; Machine Learning — AIML Mini Project</p>
+    <p style="margin-top:8px;font-size:11px">Built with HTML5 · CSS3 · Vanilla JavaScript</p>
+  </div>
+</footer>
+
+<script>
+/* ============================
+   HERO ANIMATION SETUP
+============================ */
+(function(){
+  const bg = document.getElementById('heroBg');
+  for(let i=0;i<64;i++) bg.appendChild(document.createElement('div'));
+
+  const fq = document.getElementById('floatingQueens');
+  for(let i=0;i<14;i++){
+    const el = document.createElement('div');
+    el.className='fq';
+    el.textContent='♛';
+    el.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;animation-duration:${8+Math.random()*12}s;animation-delay:${Math.random()*6}s;color:rgba(0,229,255,${0.2+Math.random()*0.3})`;
+    fq.appendChild(el);
+  }
+})();
+
+/* ============================
+   MINI BOARD (About Section)
+============================ */
+(function(){
+  const board = document.getElementById('miniBoard');
+  const N=8;
+  // A valid 8-queen solution for demo
+  const queens=[0,4,7,5,2,6,1,3];
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      const cell = document.createElement('div');
+      cell.className=`mini-cell ${(r+c)%2===0?'light':'dark'}`;
+      cell.dataset.r=r; cell.dataset.c=c;
+      if(queens[c]===r){
+        cell.innerHTML='<span style="font-size:20px">♛</span>';
+        cell.classList.add('queen-here');
+        cell.addEventListener('mouseenter',()=>highlightAttacks(c,r));
+        cell.addEventListener('mouseleave',resetMiniBoard);
+      }
+      board.appendChild(cell);
+    }
+  }
+  function highlightAttacks(qc,qr){
+    resetMiniBoard();
+    const cells = board.querySelectorAll('.mini-cell');
+    cells.forEach(cell=>{
+      const r=+cell.dataset.r, c=+cell.dataset.c;
+      if(c===qc&&r===qr) return;
+      const attacked=(r===qr)||(c===qc)||(Math.abs(r-qr)===Math.abs(c-qc));
+      if(attacked) cell.classList.add('attacked');
+      else cell.classList.add('safe');
+    });
+  }
+  function resetMiniBoard(){
+    board.querySelectorAll('.mini-cell').forEach(c=>{
+      c.classList.remove('attacked','safe');
+    });
+  }
+})();
+
+/* ============================
+   SCROLL REVEAL
+============================ */
+const revealEls = document.querySelectorAll('.reveal');
+const revealObs = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');revealObs.unobserve(e.target);}});
+},{threshold:.15});
+revealEls.forEach(el=>revealObs.observe(el));
+
+/* ============================
+   SOLVER STATE
+============================ */
+let N=6, board=[], solving=false, paused=false, stepMode=false;
+let currentH=0, stepCount=0, iterCount=0, restartCount=0, bestH=Infinity;
+let solveTimer=null, restartEnabled=false, speedVal=5;
+let pendingSteps=[], stepIdx=0;
+
+function getSpeed(){ return Math.max(50, 600 - speedVal*55); }
+
+/* ============================
+   BOARD INIT
+============================ */
+function initBoard(n){
+  N=n;
+  board=[];
+  for(let c=0;c<N;c++) board.push(Math.floor(Math.random()*N));
+  renderBoard();
+  document.getElementById('statN').textContent=N;
+}
+
+function renderBoard(){
+  const el = document.getElementById('chess-board');
+  el.style.gridTemplateColumns=`repeat(${N},1fr)`;
+  const sz = Math.min(Math.floor((window.innerWidth<600?300:520)/N),70);
+  el.innerHTML='';
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      const cell=document.createElement('div');
+      cell.className=`cell ${(r+c)%2===0?'light':'dark'}`;
+      cell.style.width=cell.style.height=sz+'px';
+      cell.style.fontSize=(sz*0.55)+'px';
+      cell.id=`cell-${r}-${c}`;
+      if(board[c]===r){
+        const q=document.createElement('span');
+        q.className='queen-piece';
+        q.textContent='♛';
+        cell.appendChild(q);
+        cell.classList.add('queen');
+      }
+      el.appendChild(cell);
+    }
+  }
+  const labels = document.getElementById('boardLabels');
+  labels.innerHTML='';
+  for(let c=0;c<N;c++){
+    const d=document.createElement('span');
+    d.textContent=String.fromCharCode(65+c);
+    d.style.fontFamily='var(--font-code)';
+    d.style.fontSize='11px';
+    labels.appendChild(d);
+  }
+}
+
+/* ============================
+   HEURISTIC
+============================ */
+function calcHeuristic(b){
+  let h=0;
+  for(let i=0;i<b.length;i++){
+    for(let j=i+1;j<b.length;j++){
+      if(b[i]===b[j] || Math.abs(b[i]-b[j])===Math.abs(i-j)) h++;
+    }
+  }
+  return h;
+}
+
+/* ============================
+   ATTACKING PAIRS
+============================ */
+function getAttackingPairs(b){
+  const pairs=[];
+  for(let i=0;i<b.length;i++){
+    for(let j=i+1;j<b.length;j++){
+      if(b[i]===b[j] || Math.abs(b[i]-b[j])===Math.abs(i-j)) pairs.push([i,j]);
+    }
+  }
+  return pairs;
+}
+
+/* ============================
+   UPDATE BOARD VISUALS
+============================ */
+function updateBoardVisual(highlight, bestCol, bestRow){
+  const el=document.getElementById('chess-board');
+  el.querySelectorAll('.cell').forEach(c=>{
+    c.classList.remove('attacking','best-move','current-queen','queen');
+    c.innerHTML='';
+  });
+  // place queens
+  for(let c=0;c<N;c++){
+    const cell=document.getElementById(`cell-${board[c]}-${c}`);
+    if(!cell) continue;
+    const q=document.createElement('span');
+    q.className='queen-piece';
+    q.textContent='♛';
+    cell.appendChild(q);
+    cell.classList.add('queen');
+  }
+  // highlight attacking
+  if(highlight){
+    const pairs=getAttackingPairs(board);
+    pairs.forEach(([ci,cj])=>{
+      const ca=document.getElementById(`cell-${board[ci]}-${ci}`);
+      const cb=document.getElementById(`cell-${board[cj]}-${cj}`);
+      if(ca) ca.classList.add('attacking');
+      if(cb) cb.classList.add('attacking');
+    });
+  }
+  // highlight best move
+  if(bestCol!==undefined && bestRow!==undefined){
+    const cell=document.getElementById(`cell-${bestRow}-${bestCol}`);
+    if(cell) cell.classList.add('best-move');
+  }
+}
+
+/* ============================
+   UI UPDATES
+============================ */
+function updateHeuristic(h){
+  const el=document.getElementById('heuristicNum');
+  el.textContent=h;
+  el.className='h-num'+(h===0?' good':h<=3?' ':' bad');
+}
+function setStatus(type,text){
+  const badge=document.getElementById('statusBadge');
+  const dot=badge.querySelector('.dot');
+  badge.className='status-badge '+type;
+  document.getElementById('statusText').textContent=text;
+  dot.style.display=(type==='searching'?'inline-block':'none');
+}
+function addLog(msg,type=''){
+  const log=document.getElementById('stepLog');
+  const entry=document.createElement('div');
+  entry.className='log-entry '+(type||'');
+  entry.textContent=msg;
+  log.prepend(entry);
+  if(log.children.length>50) log.lastChild.remove();
+}
+function updateStats(){
+  document.getElementById('statStep').textContent=stepCount;
+  document.getElementById('statIter').textContent=iterCount;
+  document.getElementById('statRestart').textContent=restartCount;
+  document.getElementById('statBest').textContent=bestH===Infinity?'—':bestH;
+}
+function setProgress(pct){
+  document.getElementById('progressFill').style.width=Math.min(100,pct)+'%';
+}
+
+/* ============================
+   HILL CLIMBING SOLVER
+============================ */
+function getBestNeighbor(b){
+  let bestH=Infinity, bestCol=-1, bestRow=-1, bestBoard=null;
+  for(let col=0;col<N;col++){
+    const origRow=b[col];
+    for(let row=0;row<N;row++){
+      if(row===origRow) continue;
+      b[col]=row;
+      const h=calcHeuristic(b);
+      if(h<bestH){bestH=h;bestCol=col;bestRow=row;bestBoard=[...b];}
+      b[col]=origRow;
+    }
+  }
+  return{h:bestH,col:bestCol,row:bestRow,board:bestBoard};
+}
+
+async function runSolver(){
+  solving=true; paused=false;
+  stepCount=0; iterCount=0; restartCount=0; bestH=Infinity;
+  setStatus('searching','SEARCHING');
+  addLog(`Starting Hill Climbing for N=${N}`,'info');
+  board=[];
+  for(let c=0;c<N;c++) board.push(Math.floor(Math.random()*N));
+  currentH=calcHeuristic(board);
+  updateHeuristic(currentH);
+  updateBoardVisual(true);
+  updateStats();
+
+  while(solving){
+    if(paused){await sleep(100);continue;}
+    if(currentH===0){onSolved();return;}
+
+    const best=getBestNeighbor([...board]);
+    iterCount++;
+    stepCount++;
+    updateStats();
+
+    if(best.h>=currentH){
+      // Local maximum
+      addLog(`⚠ Local max! h=${currentH}, no improvement`,'warning');
+      setStatus('stuck','LOCAL MAX');
+      if(restartEnabled && solving){
+        restartCount++;
+        addLog(`🔄 Restart #${restartCount}`,'info');
+        board=[];
+        for(let c=0;c<N;c++) board.push(Math.floor(Math.random()*N));
+        currentH=calcHeuristic(board);
+        updateHeuristic(currentH);
+        updateBoardVisual(true);
+        updateStats();
+        setStatus('searching','RESTARTING');
+        await sleep(getSpeed()*2);
+        setStatus('searching','SEARCHING');
+        continue;
+      } else {
+        solving=false;
+        setBtns(false);
+        addLog('❌ Stopped at local maximum','error');
+        return;
+      }
+    }
+
+    // Animate best move
+    updateBoardVisual(true, best.col, best.row);
+    addLog(`Step ${stepCount}: Move col ${String.fromCharCode(65+best.col)} row→${best.row+1}, h=${best.h}`);
+    await sleep(getSpeed());
+
+    board=best.board;
+    currentH=best.h;
+    if(currentH<bestH){bestH=currentH;document.getElementById('statBest').textContent=bestH;}
+    updateHeuristic(currentH);
+    updateBoardVisual(true);
+    setProgress(Math.max(0,100-currentH*8));
+    updateStats();
+
+    if(stepMode){paused=true;stepMode=false;}
+    await sleep(getSpeed()*0.3);
+  }
+}
+
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function onSolved(){
+  solving=false;
+  updateBoardVisual(false);
+  setStatus('solved','SOLUTION FOUND');
+  updateHeuristic(0);
+  setProgress(100);
+  addLog('✅ All queens placed — No conflicts!','success');
+  updateStats();
+  setBtns(false);
+  // Show result section
+  document.getElementById('rSteps').textContent=stepCount;
+  document.getElementById('rRestarts').textContent=restartCount;
+  document.getElementById('rN').textContent=N;
+  const res=document.getElementById('result');
+  res.style.display='block';
+  setTimeout(()=>res.scrollIntoView({behavior:'smooth'}),300);
+  launchConfetti();
+}
+
+function setBtns(running){
+  document.getElementById('btnStart').disabled=running;
+  document.getElementById('btnPause').disabled=!running;
+  document.getElementById('btnStep').disabled=!running;
+}
+
+/* ============================
+   CONFETTI
+============================ */
+function launchConfetti(){
+  const wrap=document.getElementById('confettiWrap');
+  wrap.style.display='block';
+  wrap.innerHTML='';
+  const colors=['#00e5ff','#7c4dff','#ffd600','#00e676','#ff1744','#fff'];
+  for(let i=0;i<80;i++){
+    const c=document.createElement('div');
+    const color=colors[Math.floor(Math.random()*colors.length)];
+    c.style.cssText=`position:absolute;width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;background:${color};left:${Math.random()*100}%;top:-10px;border-radius:${Math.random()>.5?'50%':'2px'};animation:fall ${2+Math.random()*2}s ${Math.random()*2}s ease forwards`;
+    wrap.appendChild(c);
+  }
+  if(!document.getElementById('confettiCSS')){
+    const s=document.createElement('style');
+    s.id='confettiCSS';
+    s.textContent='@keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:0}}';
+    document.head.appendChild(s);
+  }
+  setTimeout(()=>{wrap.style.display='none';wrap.innerHTML='';},5000);
+}
+
+/* ============================
+   CONTROLS
+============================ */
+document.querySelectorAll('.n-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if(solving) return;
+    document.querySelectorAll('.n-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    N=+btn.dataset.n;
+    initBoard(N);
+    resetUI();
+  });
+});
+document.getElementById('speedSlider').addEventListener('input',e=>{
+  speedVal=+e.target.value;
+  document.getElementById('speedLabel').textContent=speedVal+'x';
+});
+document.getElementById('restartToggle').addEventListener('change',e=>{
+  restartEnabled=e.target.checked;
+  document.getElementById('restartLabel').textContent=restartEnabled?'ON':'OFF';
+});
+document.getElementById('btnStart').addEventListener('click',()=>{
+  if(solving) return;
+  resetUI();
+  initBoard(N);
+  setBtns(true);
+  runSolver();
+});
+document.getElementById('btnPause').addEventListener('click',()=>{
+  paused=!paused;
+  document.getElementById('btnPause').innerHTML=paused?'<i class="fas fa-play"></i> RESUME':'<i class="fas fa-pause"></i> PAUSE';
+  setStatus(paused?'idle':'searching',paused?'PAUSED':'SEARCHING');
+});
+document.getElementById('btnStep').addEventListener('click',()=>{
+  if(paused){stepMode=true;paused=false;}
+});
+document.getElementById('btnReset').addEventListener('click',()=>{
+  solving=false; paused=false;
+  clearTimeout(solveTimer);
+  setBtns(false);
+  document.getElementById('btnPause').innerHTML='<i class="fas fa-pause"></i> PAUSE';
+  initBoard(N);
+  resetUI();
+  document.getElementById('result').style.display='none';
+});
+
+function resetUI(){
+  stepCount=0; iterCount=0; restartCount=0; bestH=Infinity;
+  setStatus('idle','IDLE');
+  document.getElementById('heuristicNum').textContent='—';
+  document.getElementById('heuristicNum').className='h-num';
+  document.getElementById('stepLog').innerHTML='';
+  setProgress(0);
+  updateStats();
+  document.getElementById('statBest').textContent='—';
+}
+
+/* ============================
+   LOCAL MAXIMA DEMO
+============================ */
+function buildLmBoard(){
+  const el=document.getElementById('lmBoard');
+  el.innerHTML='';
+  // A stuck 4-queen state
+  const b=[1,3,0,2];
+  const stuck=[0,1,2,3];
+  for(let r=0;r<4;r++){
+    for(let c=0;c<4;c++){
+      const cell=document.createElement('div');
+      cell.className=`lm-cell ${(r+c)%2===0?'light':'dark'}`;
+      if(b[c]===r){
+        cell.textContent='♛';
+        cell.style.fontSize='26px';
+        cell.classList.add('stuck-queen');
+      }
+      el.appendChild(cell);
+    }
+  }
+}
+function runLmDemo(){
+  buildLmBoard();
+  document.getElementById('lmMsg').textContent='⚠ All moves increase conflicts — LOCAL MAXIMUM REACHED';
+}
+buildLmBoard();
+
+/* ============================
+   INIT
+============================ */
+initBoard(6);
+resetUI();
+
+/* ============================
+   NAV HIGHLIGHT
+============================ */
+window.addEventListener('scroll',()=>{
+  const sections=['about','why-ai','hill-climbing','solver','pseudocode','complexity'];
+  const pos=window.scrollY+200;
+  sections.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    const link=document.querySelector(`nav a[href="#${id}"]`);
+    if(!link) return;
+    if(pos>=el.offsetTop && pos<el.offsetTop+el.offsetHeight){
+      link.style.color='var(--cyan)';
+    } else {
+      link.style.color='';
+    }
+  });
+});
+</script>
+</body>
+</html>
